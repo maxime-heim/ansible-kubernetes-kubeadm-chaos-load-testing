@@ -4,17 +4,37 @@
     src: coredns-configmap.yaml
     dest: /tmp/coredns-configmap.yaml
 
+# The ConfigMap always exists, since kubeadm creates it: its presence says nothing.
+# The last-applied annotation does: kubeadm does not set it, "kubectl apply" does.
+- name: Check whether the CoreDNS ConfigMap was already customized
+  become: false
+  command: >
+    kubectl get configmap coredns -n kube-system
+    -o jsonpath='{.metadata.annotations.kubectl\.kubernetes\.io/last-applied-configuration}'
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  register: coredns_last_applied
+  changed_when: false
+  check_mode: false
+
+# Create-only: the Corefile is applied once, over the one of kubeadm. To apply it
+# again, run "kubectl apply" by hand or change it in gitops/.
 - name: Appliquer la configuration CoreDNS
   become: false
   command: kubectl apply -f /tmp/coredns-configmap.yaml
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  register: coredns_apply
+  when: coredns_last_applied.stdout | length == 0
 
+# Only after a change: restarting CoreDNS on every run cut the DNS of the cluster for
+# no reason. If a run stops right here, the "reload" plugin picks up the new Corefile.
 - name: Redémarrer CoreDNS
   become: false
   command: kubectl rollout restart deployment/coredns -n kube-system
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: coredns_apply is changed
 
 - name: Attendre que CoreDNS soit prêt
   become: false

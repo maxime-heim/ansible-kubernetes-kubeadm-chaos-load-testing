@@ -1,5 +1,8 @@
 ---
+# The condition is needed in addition to "creates": without a node to join, the join
+# command is not generated, and its variable is undefined.
 - name: Rejoindre le cluster
   command: "{{ hostvars[groups['control_plane'][0]]['kubeadm_join_command'] }}"
   args:
     creates: /etc/kubernetes/kubelet.conf
+  when: needs_join

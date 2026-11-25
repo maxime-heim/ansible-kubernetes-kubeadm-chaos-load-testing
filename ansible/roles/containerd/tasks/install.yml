@@ -33,23 +33,45 @@
     state: present
     update_cache: yes
 
+# Create-only: the configuration used to be generated and containerd restarted on
+# every run, on all the nodes at once.
+#
+# The presence of config.toml cannot be the criterion: the containerd.io package ships
+# one, with the CRI plugin disabled. SystemdCgroup = true is only there once this role
+# has configured the node. If a run stops before that, everything is generated again.
+- name: Check whether containerd is already configured
+  command: grep -qE '^\s*SystemdCgroup = true' /etc/containerd/config.toml
+  register: containerd_configured
+  changed_when: false
+  failed_when: containerd_configured.rc > 2
+  check_mode: false
+
 - name: Générer la configuration containerd par défaut
   shell: containerd config default > /etc/containerd/config.toml
+  when: containerd_configured.rc != 0
+  notify: Redémarrer containerd
 
 - name: Activer le cgroup systemd
   replace:
     path: /etc/containerd/config.toml
     regexp: 'SystemdCgroup = false'
     replace: 'SystemdCgroup = true'
+  notify: Redémarrer containerd
 
 - name: Activer le plugin CRI
   lineinfile:
     path: /etc/containerd/config.toml
     regexp: '^disabled_plugins'
     line: 'disabled_plugins = []'
+  notify: Redémarrer containerd
 
-- name: Redémarrer containerd
+- name: Activer et démarrer containerd
   systemd:
     name: containerd
     enabled: true
-    state: restarted
+    state: started
+
+# Restart now rather than at the end of the play: a failure in a later role would lose
+# the notification, and the next run would find nothing to change.
+- name: Restart containerd if its configuration changed
+  meta: flush_handlers

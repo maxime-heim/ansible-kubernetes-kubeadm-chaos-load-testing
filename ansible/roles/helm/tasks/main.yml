@@ -31,3 +31,5 @@
   until: helm_pull is succeeded
   retries: 10
   delay: 15
+
+- import_tasks: installed_components.yml

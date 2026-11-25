@@ -1,0 +1,84 @@
+---
+# CREATE-ONLY GUARD
+#
+# Ansible only bootstraps the cluster: what is already installed is left alone,
+# because Argo CD (or an operator) may have changed it since. Every install task
+# is therefore skipped when its component is in "installed_components".
+#
+# A component is installed when either of these is true:
+#   - it has a Helm release in the "deployed" state. A release left "failed" or
+#     "pending" by an interrupted install does not count, so it is retried;
+#   - it has an Argo CD Application. Argo CD does not create Helm releases, so
+#     the Application must be named after the Helm release (e.g. "argocd", not
+#     "argo-cd") to be recognized here.
+#
+# Consequence: changing a version or a value has no effect on a component that is
+# already installed. Before its adoption by Argo CD, it can still be upgraded with
+#   make deploy ANSIBLE_ARGS="-e force_upgrade=metallb,traefik"
+#
+# The checks fail closed: if the API server does not answer, the playbook stops
+# instead of taking every component for missing and installing it again.
+- name: List the deployed Helm releases
+  become: false
+  command: helm list --all-namespaces --deployed --output json
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  register: helm_releases
+  changed_when: false
+  check_mode: false
+
+# On a new cluster the CRD does not exist yet, and listing the Applications would
+# fail: that must not be confused with an unreachable API server.
+- name: Check whether the Argo CD CRDs are installed
+  become: false
+  command: kubectl get crd applications.argoproj.io --ignore-not-found -o name
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  register: argocd_crd
+  changed_when: false
+  check_mode: false
+
+- name: List the Argo CD Applications
+  become: false
+  command: kubectl get applications.argoproj.io -n argocd -o jsonpath='{.items[*].metadata.name}'
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  register: argocd_applications
+  changed_when: false
+  check_mode: false
+  when: argocd_crd.stdout | length > 0
+
+# Not a Helm release: it is installed from a plain manifest.
+- name: Check whether metrics-server is installed
+  become: false
+  command: kubectl get deployment metrics-server -n kube-system --ignore-not-found -o name
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  register: metrics_server_deployment
+  changed_when: false
+  check_mode: false
+
+- name: Record the installed components
+  set_fact:
+    argocd_managed_components: "{{ (argocd_applications.stdout | default('')).split() }}"
+    installed_components: >-
+      {{ (helm_releases.stdout | from_json | map(attribute='name') | list
+          + (argocd_applications.stdout | default('')).split()
+          + (['metrics-server'] if metrics_server_deployment.stdout | length > 0 else []))
+         | unique }}
+
+- name: Show the installed components
+  debug:
+    msg: "Already installed, left unchanged: {{ installed_components | difference(force_upgrade.split(',')) | sort | join(', ') }}"
+
+# An unknown name is most likely a typo, and would silently do nothing. A component
+# managed by Argo CD must be upgraded in gitops/: selfHeal would revert the change.
+# app-of-apps is the exception, it is the only Application created by Ansible.
+- name: Check the components to upgrade
+  assert:
+    that:
+      - item in installed_components
+      - item not in argocd_managed_components or item == 'app-of-apps'
+    fail_msg: "force_upgrade: '{{ item }}' is not installed, or is managed by Argo CD"
+    quiet: true
+  loop: "{{ force_upgrade.split(',') | select | list }}"

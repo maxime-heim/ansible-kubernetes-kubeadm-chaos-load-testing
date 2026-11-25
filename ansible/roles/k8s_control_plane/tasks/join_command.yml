@@ -1,4 +1,20 @@
 ---
+# Only when a node has to join: otherwise each run left a token valid for 24 h, and
+# uploaded the control plane certificates again.
+#
+# "needs_join" is set on every node by the first play of site.yml. The nodes that could
+# not be reached do not have it, and are ignored.
+- name: List the nodes to join
+  set_fact:
+    control_planes_to_join: >-
+      {{ groups['control_plane_secondary'] | default([]) | map('extract', hostvars)
+         | selectattr('needs_join', 'defined') | selectattr('needs_join')
+         | map(attribute='inventory_hostname') | list }}
+    workers_to_join: >-
+      {{ groups['workers'] | default([]) | map('extract', hostvars)
+         | selectattr('needs_join', 'defined') | selectattr('needs_join')
+         | map(attribute='inventory_hostname') | list }}
+
 - name: Générer la commande de join
   command: kubeadm token create --print-join-command
   register: join_command_raw
@@ -6,10 +22,12 @@
   retries: 6
   delay: 5
   changed_when: false
+  when: (control_planes_to_join + workers_to_join) | length > 0
 
 - name: Sauvegarder la commande de join dans hostvars
   set_fact:
     kubeadm_join_command: "{{ join_command_raw.stdout }}"
+  when: join_command_raw is not skipped
 
 - name: Upload the control plane certificates
   command: kubeadm init phase upload-certs --upload-certs
@@ -19,10 +37,10 @@
   delay: 5
   changed_when: false
   no_log: true
-  when: groups['control_plane_secondary'] | default([]) | length > 0
+  when: control_planes_to_join | length > 0
 
 - name: Save the certificate key in hostvars
   set_fact:
     kubeadm_certificate_key: "{{ upload_certs.stdout_lines | last }}"
   no_log: true
-  when: groups['control_plane_secondary'] | default([]) | length > 0
+  when: upload_certs is not skipped

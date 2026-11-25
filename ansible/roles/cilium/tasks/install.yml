@@ -1,4 +1,5 @@
 ---
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer Cilium
   become: false
   command: >-
@@ -22,6 +23,7 @@
     --set encryption.type=wireguard 
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'cilium' not in installed_components or 'cilium' in force_upgrade.split(',')"
 
 - name: Attendre que Cilium soit prêt
   become: false

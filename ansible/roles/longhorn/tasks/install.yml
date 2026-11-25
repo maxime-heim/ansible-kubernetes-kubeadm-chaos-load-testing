@@ -4,6 +4,7 @@
     src: "{{ playbook_dir }}/../gitops/longhorn/values.yaml"
     dest: /tmp/longhorn-values.yaml
 
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer Longhorn
   become: false
   command: >
@@ -14,6 +15,7 @@
     -f /tmp/longhorn-values.yaml
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'longhorn' not in installed_components or 'longhorn' in force_upgrade.split(',')"
 
 - name: Attendre que Longhorn soit prêt
   become: false

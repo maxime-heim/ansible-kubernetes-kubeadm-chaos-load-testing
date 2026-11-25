@@ -29,8 +29,11 @@
                       port:
                         number: 80
 
+# Create-only: existing objects are kept (see helm/tasks/create_manifest.yml).
 - name: Appliquer l'Ingress ArgoCD
-  become: false
-  command: kubectl apply -f /tmp/argocd-ingress.yaml
-  environment:
-    KUBECONFIG: /home/debian/.kube/config
+  include_role:
+    name: helm
+    tasks_from: create_manifest.yml
+  vars:
+    manifest_path: /tmp/argocd-ingress.yaml
+    manifest_component: argocd

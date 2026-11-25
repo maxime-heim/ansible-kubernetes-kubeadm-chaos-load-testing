@@ -18,8 +18,11 @@
         ca:
           secretName: homelab-ca
 
+# Create-only: existing objects are kept (see helm/tasks/create_manifest.yml).
 - name: Appliquer le ClusterIssuer
-  become: false
-  command: kubectl apply -f /tmp/homelab-ca-issuer.yaml
-  environment:
-    KUBECONFIG: /home/debian/.kube/config
+  include_role:
+    name: helm
+    tasks_from: create_manifest.yml
+  vars:
+    manifest_path: /tmp/homelab-ca-issuer.yaml
+    manifest_component: cert-manager

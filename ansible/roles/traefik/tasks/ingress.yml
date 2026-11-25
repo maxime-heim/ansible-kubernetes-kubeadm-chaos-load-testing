@@ -51,8 +51,11 @@
         tls:
           secretName: traefik-dashboard-tls
 
+# Create-only: existing objects are kept (see helm/tasks/create_manifest.yml).
 - name: Appliquer les manifests dashboard Traefik
-  become: false
-  command: kubectl apply -f /tmp/traefik-dashboard.yaml
-  environment:
-    KUBECONFIG: /home/debian/.kube/config
+  include_role:
+    name: helm
+    tasks_from: create_manifest.yml
+  vars:
+    manifest_path: /tmp/traefik-dashboard.yaml
+    manifest_component: traefik

@@ -1,12 +1,18 @@
 ---
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
+#
+# The version is pinned: "releases/latest" could upgrade the component on any run.
 - name: Déployer le manifeste metrics-server
   become: false
   command: >
     kubectl apply -f
-    https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+    https://github.com/kubernetes-sigs/metrics-server/releases/download/{{ metrics_server_version }}/components.yaml
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'metrics-server' not in installed_components or 'metrics-server' in force_upgrade.split(',')"
 
+# Not guarded: if a run stops between the install and the patch, the next one must
+# still add the flag. Nothing is changed when it is already there.
 - name: Vérifier si --kubelet-insecure-tls est déjà présent
   become: false
   command: >
@@ -16,6 +22,7 @@
     KUBECONFIG: /home/debian/.kube/config
   register: metrics_args
   changed_when: false
+  check_mode: false
 
 # Les certificats kubelet sont auto-signés dans un cluster kubeadm,
 # metrics-server ne peut pas les vérifier sans cette option.

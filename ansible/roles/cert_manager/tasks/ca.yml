@@ -1,42 +1,71 @@
 ---
-- name: Créer le répertoire de la CA
+# Create-only: the CA of the cluster is the one in the secret. The files on the control
+# plane are only used to create it: if the VM is rebuilt, they are gone, and a new CA
+# must not replace the one that signed every certificate in use.
+- name: Check whether the CA is already in the cluster
   become: false
-  file:
-    path: /home/debian/homelab-ca
-    state: directory
-    mode: '0700'
-
-- name: Générer la clé privée
-  become: false
-  command: openssl genrsa -out /home/debian/homelab-ca/ca.key 4096
-  args:
-    creates: /home/debian/homelab-ca/ca.key
-
-- name: Générer le certificat auto-signé (10 ans)
-  become: false
-  command: >
-    openssl req -new -x509 -days 3650
-    -key /home/debian/homelab-ca/ca.key
-    -subj "/CN=HomeLabCA/O=HomeLab"
-    -addext "basicConstraints=critical,CA:TRUE"
-    -addext "keyUsage=critical,keyCertSign,cRLSign"
-    -out /home/debian/homelab-ca/ca.crt
-  args:
-    creates: /home/debian/homelab-ca/ca.crt
-
-- name: Créer le secret Kubernetes pour la CA
-  become: false
-  shell: |
-    kubectl create secret tls homelab-ca \
-      --cert=/home/debian/homelab-ca/ca.crt \
-      --key=/home/debian/homelab-ca/ca.key \
-      --namespace=cert-manager \
-      --dry-run=client -o yaml | kubectl apply -f -
+  command: kubectl get secret homelab-ca -n cert-manager --ignore-not-found -o name
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  register: ca_secret
+  changed_when: false
+  check_mode: false
+
+- name: Create the CA
+  become: false
+  when: ca_secret.stdout | length == 0
+  block:
+    - name: Créer le répertoire de la CA
+      file:
+        path: /home/debian/homelab-ca
+        state: directory
+        mode: '0700'
+
+    - name: Générer la clé privée
+      command: openssl genrsa -out /home/debian/homelab-ca/ca.key 4096
+      args:
+        creates: /home/debian/homelab-ca/ca.key
+
+    - name: Générer le certificat auto-signé (10 ans)
+      command: >
+        openssl req -new -x509 -days 3650
+        -key /home/debian/homelab-ca/ca.key
+        -subj "/CN=HomeLabCA/O=HomeLab"
+        -addext "basicConstraints=critical,CA:TRUE"
+        -addext "keyUsage=critical,keyCertSign,cRLSign"
+        -out /home/debian/homelab-ca/ca.crt
+      args:
+        creates: /home/debian/homelab-ca/ca.crt
+
+    # "create" and not "apply": it fails rather than replacing an existing CA.
+    - name: Créer le secret Kubernetes pour la CA
+      command: >
+        kubectl create secret tls homelab-ca
+        --cert=/home/debian/homelab-ca/ca.crt
+        --key=/home/debian/homelab-ca/ca.key
+        --namespace=cert-manager
+      environment:
+        KUBECONFIG: /home/debian/.kube/config
+
+# Read from the cluster, as the file may not be on this control plane anymore. Decoded by
+# Ansible: in a pipe to base64, a failure of kubectl would go unnoticed.
+- name: Read the CA certificate from the cluster
+  become: false
+  command: kubectl get secret homelab-ca -n cert-manager -o jsonpath='{.data.tls\.crt}'
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  register: ca_certificate
+  changed_when: false
+  check_mode: false
+
+- name: Write the CA certificate (public) on the control plane
+  copy:
+    content: "{{ ca_certificate.stdout | b64decode }}"
+    dest: /tmp/homelab-ca.crt
+    mode: '0644'
 
 - name: Récupérer le certificat CA en local
   fetch:
-    src: /home/debian/homelab-ca/ca.crt
+    src: /tmp/homelab-ca.crt
     dest: "{{ playbook_dir }}/../../ca.crt"
     flat: true

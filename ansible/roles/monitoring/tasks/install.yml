@@ -8,11 +8,13 @@
   environment:
     KUBECONFIG: /home/debian/.kube/config
 
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer Prometheus & Grafana
   become: false
   command: helm upgrade --install kube-prometheus-stack {{ helm_charts_dir }}/kube-prometheus-stack-{{ helm_charts['kube-prometheus-stack'].version }}.tgz --namespace monitoring 
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'kube-prometheus-stack' not in installed_components or 'kube-prometheus-stack' in force_upgrade.split(',')"
 
 - name: Attendre que Prometheus soit prêt
   become: false

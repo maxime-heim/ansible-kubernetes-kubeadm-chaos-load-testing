@@ -8,6 +8,17 @@
     - storage
     - containerd
     - kubernetes_packages
+  # Read by k8s_control_plane, to only generate a join command when it is needed. Same
+  # files as the "creates" of the join tasks.
+  post_tasks:
+    - name: Check whether the node already joined the cluster
+      stat:
+        path: "/etc/kubernetes/{{ 'kubelet.conf' if inventory_hostname in groups['workers'] | default([]) else 'admin.conf' }}"
+      register: kubernetes_conf
+
+    - name: Record whether the node has to join the cluster
+      set_fact:
+        needs_join: "{{ not kubernetes_conf.stat.exists }}"
 
 - name: Initialiser le control plane
   hosts: control_plane

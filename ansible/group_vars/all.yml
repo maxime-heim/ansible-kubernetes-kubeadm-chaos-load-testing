@@ -10,6 +10,14 @@ metallb_ip_range: "192.168.1.200-192.168.1.210"
 control_plane_vip: "192.168.1.220"
 kube_vip_version: "v1.3.2"
 
+# Installed from its release manifest, not from a Helm chart
+metrics_server_version: "v0.9.1"
+
+# Components to upgrade although they are already installed, comma separated.
+# Empty by default: what is installed is never modified, so changing a version below
+# has no effect on an existing cluster (see roles/helm/tasks/installed_components.yml).
+force_upgrade: ""
+
 # Helm charts, all downloaded on the control plane by the helm role
 helm_charts_dir: /opt/helm-charts
 helm_charts:

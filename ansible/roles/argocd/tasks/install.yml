@@ -14,6 +14,12 @@
   environment:
     KUBECONFIG: /home/debian/.kube/config
 
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
+#
+# server.insecure is set through configs.params: "server.insecure" at the root of the
+# values is ignored by the chart. The ConfigMap used to be patched after the install,
+# which restarted argocd-server on every run, and which Argo CD would revert once it
+# manages itself.
 - name: Installer ArgoCD via Helm
   kubernetes.core.helm:
     name: argocd
@@ -23,22 +29,14 @@
     wait: true
     timeout: 300s
     values:
-      server:
-        insecure: true
+      configs:
+        params:
+          server.insecure: true
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'argocd' not in installed_components or 'argocd' in force_upgrade.split(',')"
 
-- name: Forcer le mode insecure ArgoCD
-  become: false
-  shell: |
-    kubectl patch configmap argocd-cmd-params-cm -n {{ argocd_namespace }} \
-      --type merge -p '{"data": {"server.insecure": "true"}}'
-    kubectl rollout restart deployment/argocd-server -n {{ argocd_namespace }}
-    kubectl rollout status deployment/argocd-server -n {{ argocd_namespace }} --timeout=120s
-  environment:
-    KUBECONFIG: /home/debian/.kube/config
-  changed_when: false
-
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Déployer l'App of Apps
   kubernetes.core.k8s:
     state: present
@@ -67,3 +65,4 @@
             - CreateNamespace=true
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'app-of-apps' not in installed_components or 'app-of-apps' in force_upgrade.split(',')"

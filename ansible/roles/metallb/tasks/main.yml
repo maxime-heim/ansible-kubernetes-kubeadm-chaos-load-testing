@@ -1,4 +1,5 @@
 ---
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer MetalLB
   become: false
   command: >
@@ -8,6 +9,7 @@
     --wait
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'metallb' not in installed_components or 'metallb' in force_upgrade.split(',')"
 
 - name: Copier la configuration MetalLB
   copy:
@@ -31,8 +33,11 @@
         ipAddressPools:
           - homelab-pool
 
+# Create-only: existing objects are kept (see helm/tasks/create_manifest.yml).
 - name: Appliquer la configuration MetalLB
-  become: false
-  command: kubectl apply -f /tmp/metallb-config.yaml
-  environment:
-    KUBECONFIG: /home/debian/.kube/config
+  include_role:
+    name: helm
+    tasks_from: create_manifest.yml
+  vars:
+    manifest_path: /tmp/metallb-config.yaml
+    manifest_component: metallb

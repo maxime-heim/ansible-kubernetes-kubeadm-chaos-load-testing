@@ -4,6 +4,7 @@
     src: values.yaml
     dest: /tmp/traefik-values.yaml
 
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer Traefik
   become: false
   command: >
@@ -14,6 +15,7 @@
     -f /tmp/traefik-values.yaml
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'traefik' not in installed_components or 'traefik' in force_upgrade.split(',')"
 
 - name: Attendre que Traefik soit prêt
   become: false

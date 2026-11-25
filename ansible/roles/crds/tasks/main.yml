@@ -1,4 +1,5 @@
 ---
+# Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer les CRDs Prometheus Operator
   become: false
   command: >
@@ -8,3 +9,4 @@
     --wait
   environment:
     KUBECONFIG: /home/debian/.kube/config
+  when: "'prometheus-operator-crds' not in installed_components or 'prometheus-operator-crds' in force_upgrade.split(',')"

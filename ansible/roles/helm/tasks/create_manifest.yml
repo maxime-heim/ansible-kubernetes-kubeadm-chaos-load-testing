@@ -1,0 +1,27 @@
+---
+# Create the objects of a manifest, without touching those that already exist.
+# Called with include_role / tasks_from, with:
+#   manifest_path:      path of the manifest on the control plane
+#   manifest_component: component it belongs to, for force_upgrade
+#
+# "kubectl create" is used instead of "apply", which would overwrite what Argo CD
+# changed. It is not tied to the guard of the Helm release on purpose: if a run
+# stops between the release and its manifests, the next one creates them.
+#
+# Objects are recognized by kind, namespace and name: renaming one in gitops/
+# without removing it from the role creates a duplicate.
+- name: "Create the manifest {{ manifest_path | basename }}"
+  become: false
+  command: >
+    kubectl {{ 'apply' if manifest_component in force_upgrade.split(',') else 'create --save-config' }}
+    -f {{ manifest_path }}
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  register: manifest_result
+  changed_when: "'created' in manifest_result.stdout or 'configured' in manifest_result.stdout"
+  # AlreadyExists is the expected result, any other error is a real failure.
+  failed_when: >-
+    manifest_result.rc != 0 and
+    (manifest_result.stderr | length == 0 or
+     manifest_result.stderr_lines | reject('search', '\\(AlreadyExists\\)')
+     | reject('match', 'Warning:') | list | length > 0)
