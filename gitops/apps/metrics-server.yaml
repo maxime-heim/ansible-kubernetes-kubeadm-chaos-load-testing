@@ -9,7 +9,7 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
       targetRevision: HEAD
       path: gitops/metrics-server/manifests
   destination:

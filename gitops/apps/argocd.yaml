@@ -19,7 +19,7 @@ spec:
         releaseName: argocd
         valueFiles:
           - $values/gitops/argocd/values.yaml
-    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
       targetRevision: HEAD
       ref: values
       path: gitops/argocd/manifests

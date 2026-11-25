@@ -17,7 +17,7 @@ spec:
         releaseName: traefik
         valueFiles:
           - $values/gitops/traefik/values.yaml
-    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
       targetRevision: HEAD
       ref: values
       path: gitops/traefik/manifests

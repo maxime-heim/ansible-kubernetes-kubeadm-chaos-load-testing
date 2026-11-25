@@ -20,7 +20,7 @@ spec:
         releaseName: kube-prometheus-stack
         valueFiles:
           - $values/gitops/kube-prometheus-stack/values.yaml
-    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
       targetRevision: HEAD
       ref: values
       path: gitops/kube-prometheus-stack/manifests
