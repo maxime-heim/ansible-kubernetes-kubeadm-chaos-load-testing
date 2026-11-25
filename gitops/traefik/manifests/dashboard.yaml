@@ -1,0 +1,55 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: traefik-dashboard-tls
+  namespace: traefik
+spec:
+  secretName: traefik-dashboard-tls
+  issuerRef:
+    name: homelab-ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - traefik.homelab.local
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-dashboard
+  namespace: traefik
+  annotations:
+    # The CRD comes from the chart of the same Application.
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  redirectRegex:
+    regex: ^https://traefik\.homelab\.local/?$
+    replacement: https://traefik.homelab.local/dashboard/
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: traefik
+  annotations:
+    # The CRD comes from the chart of the same Application.
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.homelab.local`) && PathPrefix(`/`)
+      kind: Rule
+      middlewares:
+        - name: redirect-to-dashboard
+      services:
+        - name: api@internal
+          kind: TraefikService
+    - match: Host(`traefik.homelab.local`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    secretName: traefik-dashboard-tls

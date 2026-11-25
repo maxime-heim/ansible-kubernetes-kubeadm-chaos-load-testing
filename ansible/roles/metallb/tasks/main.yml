@@ -3,7 +3,7 @@
 - name: Installer MetalLB
   become: false
   command: >
-    helm upgrade --install metallb {{ helm_charts_dir }}/metallb-{{ helm_charts['metallb'].version }}.tgz
+    helm upgrade --install metallb {{ helm_charts_dir }}/metallb-{{ helm_charts['metallb'].targetRevision }}.tgz
     --namespace metallb-system
     --create-namespace
     --wait
@@ -13,25 +13,8 @@
 
 - name: Copier la configuration MetalLB
   copy:
+    src: "{{ gitops_dir }}/metallb/manifests/pool.yaml"
     dest: /tmp/metallb-config.yaml
-    content: |
-      apiVersion: metallb.io/v1beta1
-      kind: IPAddressPool
-      metadata:
-        name: homelab-pool
-        namespace: metallb-system
-      spec:
-        addresses:
-          - {{ metallb_ip_range }}
-      ---
-      apiVersion: metallb.io/v1beta1
-      kind: L2Advertisement
-      metadata:
-        name: homelab-l2
-        namespace: metallb-system
-      spec:
-        ipAddressPools:
-          - homelab-pool
 
 # Create-only: existing objects are kept (see helm/tasks/create_manifest.yml).
 - name: Appliquer la configuration MetalLB

@@ -1,0 +1,31 @@
+# Adopted from the Ansible install: same chart, version, release name and values.
+# Manual sync, without prune nor finalizer: removing this file leaves the component
+# running. Enable "automated" only once the diff is empty or explained.
+#
+# Argo CD manages itself: to be adopted last.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Also read by Ansible for the bootstrap (ansible/group_vars/all.yml): keep it first.
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: "10.20.0"
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/gitops/argocd/values.yaml
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
+      targetRevision: HEAD
+      ref: values
+      path: gitops/argocd/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true

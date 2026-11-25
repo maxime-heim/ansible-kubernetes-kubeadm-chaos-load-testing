@@ -1,0 +1,28 @@
+# Adopted from the Ansible install: same chart, version, release name and values.
+# Manual sync, without prune nor finalizer: removing this file leaves the component
+# running. Enable "automated" only once the diff is empty or explained.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Also read by Ansible for the bootstrap (ansible/group_vars/all.yml): keep it first.
+    - repoURL: https://charts.longhorn.io
+      chart: longhorn
+      targetRevision: "1.13.0"
+      helm:
+        releaseName: longhorn
+        valueFiles:
+          - $values/gitops/longhorn/values.yaml
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

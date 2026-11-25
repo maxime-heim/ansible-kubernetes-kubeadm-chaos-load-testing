@@ -34,8 +34,8 @@ pve3           k8s-worker-03   worker           2     6 GB    20 GB
 - IPs des nœuds : control planes `192.168.1.221-223`, workers `192.168.1.231-233` (statiques, configurables dans `terraform/variables.tf`)
 - VIP de l'API Kubernetes : `192.168.1.220` (kube-vip, configurable dans `ansible/group_vars/all.yml`)
 - Réseau pods : `10.244.0.0/16` (Cilium)
-- IP LoadBalancer Traefik : `192.168.1.200` (MetalLB, configurable dans `ansible/group_vars/all.yml`)
-- Domaine local : `homelab.local` (configurable dans `ansible/group_vars/all.yml`)
+- IP LoadBalancer Traefik : `192.168.1.200` (MetalLB, configurable dans `gitops/metallb/manifests/pool.yaml`)
+- Domaine local : `homelab.local` (configurable dans les manifests de `gitops/` et dans `ansible/group_vars/all.yml`)
 
 ---
 
@@ -159,11 +159,11 @@ Les identifiants sont affichés à la fin du playbook Ansible.
 ├── ansible/
 │   ├── site.yml        # Point d'entrée unique
 │   ├── inventory.yml   # Généré par Terraform
-│   ├── group_vars/     # Variables globales (domaine, IP range, versions)
+│   ├── group_vars/     # Variables globales (réseau, VIP, chemins)
 │   └── roles/          # Un rôle par composant
 └── gitops/
     ├── apps/           # Applications ArgoCD (app-of-apps)
-    └── cert-manager/   # Values Helm
+    └── <app>/          # Values Helm et manifests, partagés avec Ansible
 ```
 
 ## Reset

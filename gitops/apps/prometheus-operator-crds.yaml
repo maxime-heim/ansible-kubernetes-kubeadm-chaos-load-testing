@@ -1,0 +1,25 @@
+# Adopted from the Ansible install: same chart, version, release name and values.
+# Manual sync, without prune nor finalizer: removing this file leaves the component
+# running. Enable "automated" only once the diff is empty or explained.
+#
+# Server-side apply: these CRDs do not fit in the last-applied annotation (256 KiB).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-operator-crds
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Also read by Ansible for the bootstrap (ansible/group_vars/all.yml): keep it first.
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-operator-crds
+      targetRevision: "33.0.2"
+      helm:
+        releaseName: prometheus-operator-crds
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true

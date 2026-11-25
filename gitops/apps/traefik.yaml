@@ -1,0 +1,29 @@
+# Adopted from the Ansible install: same chart, version, release name and values.
+# Manual sync, without prune nor finalizer: removing this file leaves the component
+# running. Enable "automated" only once the diff is empty or explained.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Also read by Ansible for the bootstrap (ansible/group_vars/all.yml): keep it first.
+    - repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: "43.0.0"
+      helm:
+        releaseName: traefik
+        valueFiles:
+          - $values/gitops/traefik/values.yaml
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
+      targetRevision: HEAD
+      ref: values
+      path: gitops/traefik/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -16,9 +16,10 @@ spec:
       helm:
         valueFiles:
           - $values/gitops/cert-manager/values.yaml
-    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
       targetRevision: HEAD
       ref: values
+      path: gitops/cert-manager/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager

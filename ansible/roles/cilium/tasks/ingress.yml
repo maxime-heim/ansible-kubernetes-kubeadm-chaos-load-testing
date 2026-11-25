@@ -1,32 +1,8 @@
 ---
 - name: Copier le manifest Ingress Hubble UI
   copy:
+    src: "{{ gitops_dir }}/cilium/manifests/ingress.yaml"
     dest: /tmp/hubble-ingress.yaml
-    content: |
-      apiVersion: networking.k8s.io/v1
-      kind: Ingress
-      metadata:
-        name: hubble-ui
-        namespace: kube-system
-        annotations:
-          cert-manager.io/cluster-issuer: homelab-ca-issuer
-      spec:
-        ingressClassName: traefik
-        tls:
-          - hosts:
-              - hubble.{{ homelab_domain }}
-            secretName: hubble-tls
-        rules:
-          - host: hubble.{{ homelab_domain }}
-            http:
-              paths:
-                - path: /
-                  pathType: Prefix
-                  backend:
-                    service:
-                      name: hubble-ui
-                      port:
-                        number: 80
 
 # Create-only: existing objects are kept (see helm/tasks/create_manifest.yml).
 - name: Appliquer l'Ingress Hubble UI

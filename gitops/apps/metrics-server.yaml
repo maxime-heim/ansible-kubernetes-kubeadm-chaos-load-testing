@@ -1,0 +1,17 @@
+# Adopted from the Ansible install: same chart, version, release name and values.
+# Manual sync, without prune nor finalizer: removing this file leaves the component
+# running. Enable "automated" only once the diff is empty or explained.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-server
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
+      targetRevision: HEAD
+      path: gitops/metrics-server/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system

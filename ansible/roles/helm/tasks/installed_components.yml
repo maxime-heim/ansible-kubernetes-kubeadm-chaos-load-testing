@@ -8,9 +8,10 @@
 # A component is installed when either of these is true:
 #   - it has a Helm release in the "deployed" state. A release left "failed" or
 #     "pending" by an interrupted install does not count, so it is retried;
-#   - it has an Argo CD Application. Argo CD does not create Helm releases, so
-#     the Application must be named after the Helm release (e.g. "argocd", not
-#     "argo-cd") to be recognized here.
+#   - it has an Argo CD Application that was synced at least once. Argo CD does not
+#     create Helm releases, so the Application must be named after the Helm release
+#     (e.g. "argocd", not "argo-cd") to be recognized here. One that was never synced
+#     has installed nothing: app-of-apps creates them all, most with a manual sync.
 #
 # Consequence: changing a version or a value has no effect on a component that is
 # already installed. Before its adoption by Argo CD, it can still be upgraded with
@@ -38,9 +39,9 @@
   changed_when: false
   check_mode: false
 
-- name: List the Argo CD Applications
+- name: List the Argo CD Applications already synced
   become: false
-  command: kubectl get applications.argoproj.io -n argocd -o jsonpath='{.items[*].metadata.name}'
+  command: kubectl get applications.argoproj.io -n argocd -o jsonpath='{range .items[?(@.status.history)]}{.metadata.name}{" "}{end}'
   environment:
     KUBECONFIG: /home/debian/.kube/config
   register: argocd_applications

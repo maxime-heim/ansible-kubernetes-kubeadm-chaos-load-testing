@@ -38,3 +38,7 @@ longhornDriver:
 metrics:
   serviceMonitor:
     enabled: true
+
+# The pre-upgrade hook becomes a PreSync hook, that Argo CD would run on every sync.
+preUpgradeChecker:
+  jobEnabled: false

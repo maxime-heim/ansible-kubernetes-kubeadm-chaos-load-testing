@@ -19,14 +19,14 @@
   become: false
   command: >
     helm pull {{ item.key }}
-    --repo {{ item.value.repo }}
-    --version {{ item.value.version }}
+    --repo {{ item.value.repoURL }}
+    --version {{ item.value.targetRevision }}
     --destination {{ helm_charts_dir }}
   args:
-    creates: "{{ helm_charts_dir }}/{{ item.key }}-{{ item.value.version }}.tgz"
+    creates: "{{ helm_charts_dir }}/{{ item.key }}-{{ item.value.targetRevision }}.tgz"
   loop: "{{ helm_charts | dict2items }}"
   loop_control:
-    label: "{{ item.key }} {{ item.value.version }}"
+    label: "{{ item.key }} {{ item.value.targetRevision }}"
   register: helm_pull
   until: helm_pull is succeeded
   retries: 10

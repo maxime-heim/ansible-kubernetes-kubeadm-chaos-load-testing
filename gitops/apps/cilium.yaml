@@ -1,0 +1,49 @@
+# Adopted from the Ansible install: same chart, version, release name and values.
+# Manual sync, without prune nor finalizer: removing this file leaves the component
+# running. Enable "automated" only once the diff is empty or explained.
+#
+# Argo CD renders the chart without access to the cluster, so the CA and the Hubble
+# certificates are generated on each render. The ones in place are kept: nothing
+# renews them, the two Hubble certificates expire on 2027-11-25 (the CA in 2029).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cilium
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Also read by Ansible for the bootstrap (ansible/group_vars/all.yml): keep it first.
+    - repoURL: https://helm.cilium.io/
+      chart: cilium
+      targetRevision: "1.20.5"
+      helm:
+        releaseName: cilium
+        valueFiles:
+          - $values/gitops/cilium/values.yaml
+    - repoURL: https://github.com/maxime-heim/ansible-kubernetes-kubeadm-chaos-load-testing
+      targetRevision: HEAD
+      ref: values
+      path: gitops/cilium/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  ignoreDifferences:
+    - kind: Secret
+      name: cilium-ca
+      namespace: kube-system
+      jsonPointers:
+        - /data
+    - kind: Secret
+      name: hubble-server-certs
+      namespace: kube-system
+      jsonPointers:
+        - /data
+    - kind: Secret
+      name: hubble-relay-client-certs
+      namespace: kube-system
+      jsonPointers:
+        - /data
+  syncPolicy:
+    syncOptions:
+      - RespectIgnoreDifferences=true

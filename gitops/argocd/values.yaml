@@ -1,0 +1,6 @@
+# Used by Ansible for the bootstrap, then by Argo CD.
+configs:
+  params:
+    # TLS is terminated by Traefik. The key must be here: at the root of the values,
+    # under "server", the chart ignores it.
+    server.insecure: true

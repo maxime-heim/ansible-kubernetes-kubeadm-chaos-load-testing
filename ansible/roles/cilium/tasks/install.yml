@@ -1,26 +1,16 @@
 ---
+- name: Copier le fichier de values Cilium
+  copy:
+    src: "{{ gitops_dir }}/cilium/values.yaml"
+    dest: /tmp/cilium-values.yaml
+
 # Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer Cilium
   become: false
   command: >-
-    helm upgrade --install cilium {{ helm_charts_dir }}/cilium-{{ helm_charts['cilium'].version }}.tgz
+    helm upgrade --install cilium {{ helm_charts_dir }}/cilium-{{ helm_charts['cilium'].targetRevision }}.tgz
     --namespace kube-system
-    --set ipam.mode=kubernetes
-    --set routingMode=native
-    --set autoDirectNodeRoutes=true
-    --set ipv4NativeRoutingCIDR={{ pod_network_cidr }}
-    --set hubble.enabled=true
-    --set hubble.relay.enabled=true
-    --set hubble.ui.enabled=true
-    --set hubble.ui.service.type=ClusterIP
-    --set hubble.metrics.enabled="{dns,drop,tcp,flow,icmp,http}"
-    --set operator.replicas={{ [2, (groups['control_plane'] + groups['control_plane_secondary'] | default([])) | length] | min }}
-    --set operator.prometheus.enabled=true
-    --set prometheus.enabled=true
-    --set dashboards.enabled=true
-    --set policyAuditMode=true
-    --set encryption.enabled=true
-    --set encryption.type=wireguard 
+    -f /tmp/cilium-values.yaml
   environment:
     KUBECONFIG: /home/debian/.kube/config
   when: "'cilium' not in installed_components or 'cilium' in force_upgrade.split(',')"

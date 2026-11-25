@@ -1,14 +1,14 @@
 ---
 - name: Copier le fichier de values Longhorn
   copy:
-    src: "{{ playbook_dir }}/../gitops/longhorn/values.yaml"
+    src: "{{ gitops_dir }}/longhorn/values.yaml"
     dest: /tmp/longhorn-values.yaml
 
 # Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer Longhorn
   become: false
   command: >
-    helm upgrade --install longhorn {{ helm_charts_dir }}/longhorn-{{ helm_charts['longhorn'].version }}.tgz
+    helm upgrade --install longhorn {{ helm_charts_dir }}/longhorn-{{ helm_charts['longhorn'].targetRevision }}.tgz
     --namespace longhorn-system
     --create-namespace
     --wait

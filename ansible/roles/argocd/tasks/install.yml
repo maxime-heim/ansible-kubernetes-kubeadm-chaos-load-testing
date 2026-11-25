@@ -15,23 +15,15 @@
     KUBECONFIG: /home/debian/.kube/config
 
 # Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
-#
-# server.insecure is set through configs.params: "server.insecure" at the root of the
-# values is ignored by the chart. The ConfigMap used to be patched after the install,
-# which restarted argocd-server on every run, and which Argo CD would revert once it
-# manages itself.
 - name: Installer ArgoCD via Helm
   kubernetes.core.helm:
     name: argocd
-    chart_ref: "{{ helm_charts_dir }}/argo-cd-{{ helm_charts['argo-cd'].version }}.tgz"
+    chart_ref: "{{ helm_charts_dir }}/argo-cd-{{ helm_charts['argo-cd'].targetRevision }}.tgz"
     release_namespace: "{{ argocd_namespace }}"
     create_namespace: false
     wait: true
     timeout: 300s
-    values:
-      configs:
-        params:
-          server.insecure: true
+    values: "{{ lookup('file', gitops_dir ~ '/argocd/values.yaml') | from_yaml }}"
   environment:
     KUBECONFIG: /home/debian/.kube/config
   when: "'argocd' not in installed_components or 'argocd' in force_upgrade.split(',')"

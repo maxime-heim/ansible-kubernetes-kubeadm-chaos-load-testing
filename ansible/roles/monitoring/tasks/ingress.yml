@@ -1,32 +1,8 @@
 ---
 - name: Copier le manifest Ingress Grafana
   copy:
+    src: "{{ gitops_dir }}/kube-prometheus-stack/manifests/ingress.yaml"
     dest: /tmp/grafana-ingress.yaml
-    content: |
-      apiVersion: networking.k8s.io/v1
-      kind: Ingress
-      metadata:
-        name: grafana
-        namespace: monitoring
-        annotations:
-          cert-manager.io/cluster-issuer: homelab-ca-issuer
-      spec:
-        ingressClassName: traefik
-        tls:
-          - hosts:
-              - grafana.{{ homelab_domain }}
-            secretName: grafana-tls
-        rules:
-          - host: grafana.{{ homelab_domain }}
-            http:
-              paths:
-                - path: /
-                  pathType: Prefix
-                  backend:
-                    service:
-                      name: kube-prometheus-stack-grafana
-                      port:
-                        number: 80
 
 # Create-only: existing objects are kept (see helm/tasks/create_manifest.yml).
 - name: Appliquer l'Ingress Grafana

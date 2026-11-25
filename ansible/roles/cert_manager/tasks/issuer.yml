@@ -8,15 +8,8 @@
 
 - name: Copier le manifest ClusterIssuer
   copy:
+    src: "{{ gitops_dir }}/cert-manager/manifests/homelab-ca-issuer.yaml"
     dest: /tmp/homelab-ca-issuer.yaml
-    content: |
-      apiVersion: cert-manager.io/v1
-      kind: ClusterIssuer
-      metadata:
-        name: homelab-ca-issuer
-      spec:
-        ca:
-          secretName: homelab-ca
 
 # Create-only: existing objects are kept (see helm/tasks/create_manifest.yml).
 - name: Appliquer le ClusterIssuer

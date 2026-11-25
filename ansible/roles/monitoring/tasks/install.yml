@@ -8,10 +8,15 @@
   environment:
     KUBECONFIG: /home/debian/.kube/config
 
+- name: Copier le fichier de values Prometheus & Grafana
+  copy:
+    src: "{{ gitops_dir }}/kube-prometheus-stack/values.yaml"
+    dest: /tmp/kube-prometheus-stack-values.yaml
+
 # Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer Prometheus & Grafana
   become: false
-  command: helm upgrade --install kube-prometheus-stack {{ helm_charts_dir }}/kube-prometheus-stack-{{ helm_charts['kube-prometheus-stack'].version }}.tgz --namespace monitoring 
+  command: helm upgrade --install kube-prometheus-stack {{ helm_charts_dir }}/kube-prometheus-stack-{{ helm_charts['kube-prometheus-stack'].targetRevision }}.tgz --namespace monitoring -f /tmp/kube-prometheus-stack-values.yaml
   environment:
     KUBECONFIG: /home/debian/.kube/config
   when: "'kube-prometheus-stack' not in installed_components or 'kube-prometheus-stack' in force_upgrade.split(',')"

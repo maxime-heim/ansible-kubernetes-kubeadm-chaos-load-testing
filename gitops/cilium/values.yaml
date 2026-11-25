@@ -1,0 +1,43 @@
+# Used by Ansible for the bootstrap, then by Argo CD.
+ipam:
+  mode: kubernetes
+
+routingMode: native
+autoDirectNodeRoutes: true
+# Same as pod_network_cidr in ansible/group_vars/all.yml
+ipv4NativeRoutingCIDR: 10.244.0.0/16
+
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+    service:
+      type: ClusterIP
+  metrics:
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - icmp
+      - http
+
+operator:
+  # One per control plane, 2 at most
+  replicas: 2
+  prometheus:
+    enabled: true
+
+prometheus:
+  enabled: true
+
+dashboards:
+  enabled: true
+
+policyAuditMode: true
+
+encryption:
+  enabled: true
+  type: wireguard

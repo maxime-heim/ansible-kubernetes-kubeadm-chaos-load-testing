@@ -1,12 +1,17 @@
 ---
+- name: Copier le fichier de values cert-manager
+  copy:
+    src: "{{ gitops_dir }}/cert-manager/values.yaml"
+    dest: /tmp/cert-manager-values.yaml
+
 # Create-only: skipped when already installed (see helm/tasks/installed_components.yml).
 - name: Installer cert-manager
   become: false
   command: >
-    helm upgrade --install cert-manager {{ helm_charts_dir }}/cert-manager-{{ helm_charts['cert-manager'].version }}.tgz
+    helm upgrade --install cert-manager {{ helm_charts_dir }}/cert-manager-{{ helm_charts['cert-manager'].targetRevision }}.tgz
     --namespace cert-manager
     --create-namespace
-    --set crds.enabled=true
+    -f /tmp/cert-manager-values.yaml
   environment:
     KUBECONFIG: /home/debian/.kube/config
   when: "'cert-manager' not in installed_components or 'cert-manager' in force_upgrade.split(',')"

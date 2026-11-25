@@ -3,45 +3,30 @@ ansible_python_interpreter: /usr/bin/python3
 kubernetes_version: "1.35.3"
 pod_network_cidr: "10.244.0.0/16"
 node_cidr: "192.168.1.0/24"
+# Only used for the summary: the host names are in the manifests of gitops/
 homelab_domain: homelab.local
-metallb_ip_range: "192.168.1.200-192.168.1.210"
 
 # Virtual IP of the API server, carried by kube-vip (outside DHCP and MetalLB ranges)
 control_plane_vip: "192.168.1.220"
 kube_vip_version: "v1.3.2"
 
-# Installed from its release manifest, not from a Helm chart
-metrics_server_version: "v0.9.1"
+# Versions, values and manifests are shared with Argo CD
+gitops_dir: "{{ playbook_dir }}/../gitops"
 
 # Components to upgrade although they are already installed, comma separated.
-# Empty by default: what is installed is never modified, so changing a version below
+# Empty by default: what is installed is never modified, so changing a version
 # has no effect on an existing cluster (see roles/helm/tasks/installed_components.yml).
 force_upgrade: ""
 
-# Helm charts, all downloaded on the control plane by the helm role
+# Helm charts, all downloaded on the control plane by the helm role. The repository and
+# the version come from the Argo CD Application, so that they are only set once.
 helm_charts_dir: /opt/helm-charts
 helm_charts:
-  cilium:
-    repo: https://helm.cilium.io/
-    version: "1.20.5"
-  prometheus-operator-crds:
-    repo: https://prometheus-community.github.io/helm-charts
-    version: "33.0.2"
-  longhorn:
-    repo: https://charts.longhorn.io
-    version: "1.13.0"
-  metallb:
-    repo: https://metallb.github.io/metallb
-    version: "0.16.2"
-  cert-manager:
-    repo: https://charts.jetstack.io
-    version: "v1.21.3"
-  traefik:
-    repo: https://traefik.github.io/charts
-    version: "43.0.0"
-  argo-cd:
-    repo: https://argoproj.github.io/argo-helm
-    version: "10.20.0"
-  kube-prometheus-stack:
-    repo: https://prometheus-community.github.io/helm-charts
-    version: "93.11.0"
+  cilium: "{{ (lookup('file', gitops_dir ~ '/apps/cilium.yaml') | from_yaml).spec.sources[0] }}"
+  prometheus-operator-crds: "{{ (lookup('file', gitops_dir ~ '/apps/prometheus-operator-crds.yaml') | from_yaml).spec.sources[0] }}"
+  longhorn: "{{ (lookup('file', gitops_dir ~ '/apps/longhorn.yaml') | from_yaml).spec.sources[0] }}"
+  metallb: "{{ (lookup('file', gitops_dir ~ '/apps/metallb.yaml') | from_yaml).spec.sources[0] }}"
+  cert-manager: "{{ (lookup('file', gitops_dir ~ '/apps/cert-manager.yaml') | from_yaml).spec.sources[0] }}"
+  traefik: "{{ (lookup('file', gitops_dir ~ '/apps/traefik.yaml') | from_yaml).spec.sources[0] }}"
+  argo-cd: "{{ (lookup('file', gitops_dir ~ '/apps/argocd.yaml') | from_yaml).spec.sources[0] }}"
+  kube-prometheus-stack: "{{ (lookup('file', gitops_dir ~ '/apps/kube-prometheus-stack.yaml') | from_yaml).spec.sources[0] }}"

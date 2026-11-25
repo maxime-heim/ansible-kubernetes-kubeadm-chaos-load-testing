@@ -4,7 +4,7 @@
   become: false
   command: >
     helm upgrade --install prometheus-operator-crds
-    {{ helm_charts_dir }}/prometheus-operator-crds-{{ helm_charts['prometheus-operator-crds'].version }}.tgz
+    {{ helm_charts_dir }}/prometheus-operator-crds-{{ helm_charts['prometheus-operator-crds'].targetRevision }}.tgz
     --namespace kube-system
     --wait
   environment:

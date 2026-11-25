@@ -1,7 +1,8 @@
 # Surcharge des valeurs du chart cert-manager
 # https://artifacthub.io/packages/helm/cert-manager/cert-manager
 
-installCRDs: true
+crds:
+  enabled: true
 
 # Exemple :
 # replicaCount: 1

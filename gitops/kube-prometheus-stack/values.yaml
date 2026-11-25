@@ -1,0 +1,5 @@
+# Used by Ansible for the bootstrap, then by Argo CD.
+
+# The CRDs are installed by prometheus-operator-crds: one owner only.
+crds:
+  enabled: false
